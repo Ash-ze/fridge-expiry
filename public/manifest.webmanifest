@@ -1,5 +1,5 @@
 {
-  "name": "冰箱临期管家",
+  "name": "冰箱临期管家 · Fridge Expiry Manager",
   "short_name": "临期管家",
   "description": "记录食材保质期，临期提醒，推荐用快过期食材做的家常菜。数据只保存在本机。",
   "lang": "zh-CN",

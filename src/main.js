@@ -385,7 +385,7 @@ function renderMe() {
           : '<p class="muted">还没有记录</p>'
       }
     </div>
-    <p class="footnote">冰箱临期管家 · 开源 · 数据不离开本机<br/>内置保质期和开封后天数仅供参考，请以包装标注和实际状况为准。</p>`;
+    <p class="footnote">冰箱临期管家 · Fridge Expiry Manager · 开源 · 数据不离开本机<br/>内置保质期和开封后天数仅供参考，请以包装标注和实际状况为准。</p>`;
 }
 
 function render() {
@@ -436,8 +436,8 @@ async function notifyToday() {
   const opts = { body, icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: `expiry-${t}` };
   try {
     const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
-    if (reg && reg.active) await reg.showNotification('冰箱临期管家', opts);
-    else new Notification('冰箱临期管家', opts);
+    if (reg && reg.active) await reg.showNotification('冰箱临期管家 · Fridge Expiry Manager', opts);
+    else new Notification('冰箱临期管家 · Fridge Expiry Manager', opts);
     lsSet('notified-on', t);
   } catch {
     /* 部分浏览器（如安卓 Chrome）只允许通过 Service Worker 发通知，下次打开再试 */
