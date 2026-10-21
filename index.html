@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>冰箱临期管家</title>
+    <meta name="description" content="记录冰箱食材的保质期，按到期紧急程度排序，推荐用快过期食材做的家常菜。数据只保存在本机。" />
+    <meta name="theme-color" content="#fff7ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1f1a16" media="(prefers-color-scheme: dark)" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="临期管家" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="冰箱临期管家" />
+    <meta property="og:title" content="冰箱临期管家 · 食材保质期提醒" />
+    <meta property="og:description" content="记下买回来的食材，按到期紧急程度排好队，推荐用快过期食材做的家常菜。纯前端，数据只存在本机。" />
+    <meta property="og:url" content="https://ash-ze.github.io/fridge-expiry/" />
+    <meta property="og:image" content="https://ash-ze.github.io/fridge-expiry/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="冰箱临期管家：按到期紧急程度排序的食材清单" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="冰箱临期管家 · 食材保质期提醒" />
+    <meta name="twitter:description" content="记下买回来的食材，按到期紧急程度排好队，推荐用快过期食材做的家常菜。" />
+    <meta name="twitter:image" content="https://ash-ze.github.io/fridge-expiry/og.png" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🧊</span>
+        <h1>冰箱临期管家</h1>
+      </div>
+      <button class="icon-btn" id="theme-btn" type="button" aria-label="切换主题" title="切换主题">🌗</button>
+    </header>
+
+    <div id="banner" class="banner" role="status" hidden></div>
+
+    <main id="app">
+      <section id="view-fridge" class="view" aria-label="冰箱">
+        <div class="month-strip" id="month-strip"></div>
+        <div class="toolbar">
+          <div class="chips" id="filter-chips" role="tablist" aria-label="按存放位置筛选"></div>
+          <input id="search" class="search" type="search" placeholder="搜索食材" aria-label="搜索食材" />
+        </div>
+        <div id="item-list"></div>
+      </section>
+
+      <section id="view-recipes" class="view" aria-label="今天吃什么" hidden>
+        <div class="section-head">
+          <h2>今天吃什么</h2>
+          <p class="muted">优先用掉快到期的食材，已过期的不会被推荐。</p>
+        </div>
+        <div class="chips" id="recipe-filters" role="tablist" aria-label="菜品分类"></div>
+        <div id="recipe-list"></div>
+      </section>
+
+      <section id="view-shopping" class="view" aria-label="购物清单" hidden>
+        <div class="section-head">
+          <h2>购物清单</h2>
+          <p class="muted">买到后勾选，再一键放进冰箱。</p>
+        </div>
+        <form id="shop-form" class="shop-add" autocomplete="off">
+          <input id="shop-input" class="search" maxlength="200" placeholder="要买什么？如：牛奶 2, 鸡蛋" aria-label="添加要买的东西" enterkeyhint="done" />
+          <button type="submit" class="btn primary">加入</button>
+        </form>
+        <div id="shop-list"></div>
+      </section>
+
+      <section id="view-me" class="view" aria-label="统计与设置" hidden>
+        <div id="me-content"></div>
+      </section>
+    </main>
+
+    <nav class="tabbar" aria-label="主导航">
+      <button type="button" data-view="fridge" class="active"><span aria-hidden="true">🧊</span>冰箱</button>
+      <button type="button" data-view="recipes"><span aria-hidden="true">🍳</span>今天吃什么</button>
+      <button type="button" id="fab" class="tab-add" aria-label="添加食材"><i aria-hidden="true">＋</i>添加</button>
+      <button type="button" data-view="shopping"><span aria-hidden="true">🛒</span>购物清单<b class="tab-badge" id="shop-badge" hidden></b></button>
+      <button type="button" data-view="me"><span aria-hidden="true">📊</span>统计设置</button>
+    </nav>
+
+    <dialog id="item-dialog" class="sheet">
+      <form id="item-form" method="dialog" autocomplete="off">
+        <div class="sheet-head">
+          <h2 id="dialog-title">添加食材</h2>
+          <button type="button" class="link-btn" id="batch-btn">📝 购物清单模式</button>
+          <button type="button" class="icon-btn" data-close aria-label="关闭">✕</button>
+        </div>
+
+        <label class="field">
+          <span>名称</span>
+          <div class="name-row">
+            <button type="button" id="emoji-btn" class="emoji-btn" aria-label="选择图标">📦</button>
+            <div class="ac-wrap">
+              <input id="f-name" name="name" required maxlength="40" placeholder="如：牛奶、鸡蛋、豆腐" enterkeyhint="next" />
+              <ul id="ac-list" class="ac-list" role="listbox" hidden></ul>
+            </div>
+          </div>
+        </label>
+        <div id="emoji-picker" class="emoji-picker" hidden></div>
+
+        <div class="field-row">
+          <label class="field">
+            <span>数量</span>
+            <div class="qty-row">
+              <button type="button" class="step" data-step="-1" aria-label="减少">−</button>
+              <input id="f-qty" name="qty" type="number" min="0.1" step="any" value="1" inputmode="decimal" />
+              <button type="button" class="step" data-step="1" aria-label="增加">＋</button>
+            </div>
+          </label>
+          <label class="field">
+            <span>单位</span>
+            <input id="f-unit" name="unit" maxlength="10" placeholder="个" list="unit-options" />
+            <datalist id="unit-options">
+              <option value="个"></option><option value="盒"></option><option value="袋"></option>
+              <option value="瓶"></option><option value="斤"></option><option value="克"></option>
+              <option value="份"></option><option value="把"></option><option value="根"></option>
+            </datalist>
+          </label>
+        </div>
+
+        <fieldset class="field">
+          <legend>存放位置</legend>
+          <div class="seg" id="f-storage">
+            <label><input type="radio" name="storage" value="fridge" checked /><span>❄️ 冷藏</span></label>
+            <label><input type="radio" name="storage" value="freezer" /><span>🧊 冷冻</span></label>
+            <label><input type="radio" name="storage" value="pantry" /><span>🏠 常温</span></label>
+          </div>
+        </fieldset>
+
+        <label class="switch-row">
+          <input type="checkbox" id="f-opened" name="opened" role="switch" />
+          <span class="switch" aria-hidden="true"></span>
+          <span class="switch-text">已开封<small id="opened-hint" class="muted"></small></span>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>购买日期</span>
+            <input id="f-purchase" name="purchaseDate" type="date" required />
+          </label>
+          <label class="field">
+            <span>到期日期</span>
+            <input id="f-expiry" name="expiryDate" type="date" required />
+          </label>
+        </div>
+        <p id="expiry-hint" class="hint"></p>
+        <div class="quick-days" id="quick-days">
+          <span class="muted">快捷：</span>
+          <button type="button" data-days="1">1天</button>
+          <button type="button" data-days="3">3天</button>
+          <button type="button" data-days="7">7天</button>
+          <button type="button" data-days="30">1个月</button>
+          <button type="button" data-days="180">半年</button>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn ghost" id="save-more">保存并继续</button>
+          <button type="submit" class="btn primary" id="save-btn">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="batch-dialog" class="sheet">
+      <form id="batch-form" method="dialog" autocomplete="off">
+        <div class="sheet-head">
+          <h2>购物清单模式</h2>
+          <button type="button" class="icon-btn" data-close aria-label="关闭">✕</button>
+        </div>
+        <div id="batch-step-input">
+          <p class="hint">一次写下买回来的东西，用逗号、顿号或换行隔开，数量写在名字前后都行。</p>
+          <textarea id="batch-text" rows="4" maxlength="1000" placeholder="牛奶 2, 鸡蛋 10, 西红柿 3" aria-label="买回来的食材"></textarea>
+          <div class="quick-days" id="batch-examples">
+            <span class="muted">试试：</span>
+            <button type="button" data-example="牛奶 2, 鸡蛋 10, 西红柿 3">牛奶 2, 鸡蛋 10…</button>
+            <button type="button" data-example="两盒豆腐、一把菠菜、五花肉 500克">两盒豆腐、一把菠菜…</button>
+          </div>
+          <div class="sheet-actions">
+            <button type="button" class="btn ghost" id="batch-single">单个添加</button>
+            <button type="submit" class="btn primary" id="batch-parse">识别食材 →</button>
+          </div>
+        </div>
+        <div id="batch-step-confirm" hidden>
+          <p class="hint">已按默认存放位置和保质期填好，可以逐个修改。保质期仅供参考。</p>
+          <ul id="batch-list" class="batch-list"></ul>
+          <p id="batch-warn" class="hint warn" role="alert"></p>
+          <div class="sheet-actions">
+            <button type="button" class="btn ghost" id="batch-back">← 改文字</button>
+            <button type="submit" class="btn primary" id="batch-save">全部保存</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="portion-dialog" class="sheet">
+      <form id="portion-form" method="dialog" autocomplete="off">
+        <div class="sheet-head">
+          <h2>吃了一部分</h2>
+          <button type="button" class="icon-btn" data-close aria-label="关闭">✕</button>
+        </div>
+        <p class="portion-item" id="portion-item"></p>
+        <label class="field">
+          <span>这次吃了多少</span>
+          <div class="qty-row">
+            <button type="button" class="step" data-pstep="-1" aria-label="减少">−</button>
+            <input id="p-amount" type="number" min="0.01" step="any" inputmode="decimal" />
+            <button type="button" class="step" data-pstep="1" aria-label="增加">＋</button>
+          </div>
+        </label>
+        <div class="quick-days" id="portion-quick">
+          <span class="muted">快捷：</span>
+          <button type="button" data-frac="0.25">¼</button>
+          <button type="button" data-frac="0.5">一半</button>
+          <button type="button" data-frac="0.75">¾</button>
+        </div>
+        <p class="hint" id="portion-left"></p>
+        <div class="sheet-actions">
+          <button type="submit" class="btn primary" id="portion-save">确定</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="more-dialog" class="sheet">
+      <div class="sheet-body">
+        <div class="sheet-head">
+          <h2 id="more-title"></h2>
+          <button type="button" class="icon-btn" data-close aria-label="关闭">✕</button>
+        </div>
+        <p class="hint" id="more-sub"></p>
+        <div class="menu">
+          <button type="button" class="menu-btn" data-more="opened"></button>
+          <button type="button" class="menu-btn" data-more="edit">✏️ 编辑<small>改名称、数量、存放位置或日期</small></button>
+          <button type="button" class="menu-btn danger" data-more="delete">🗑️ 删除<small>录错了才用；吃掉或扔掉请用卡片上的按钮</small></button>
+        </div>
+      </div>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <input type="file" id="import-file" accept="application/json,.json" hidden />
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
